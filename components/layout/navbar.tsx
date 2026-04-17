@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ShoppingCart, Sparkles } from "lucide-react";
+import { ShoppingCart, Sparkles, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,17 +9,20 @@ import { CartDrawer } from "@/components/layout/cart-drawer";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/store/use-cart-store";
+import { useCustomerAuthStore } from "@/store/use-customer-auth-store";
 
 const links = [
   { href: "/", label: "Inicio" },
   { href: "/menu", label: "Menú" },
   { href: "/checkout", label: "Checkout" },
+  { href: "/cuenta", label: "Mi cuenta" },
   { href: "/admin", label: "Admin" },
 ];
 
 export function Navbar() {
   const pathname = usePathname();
   const { items, setOpen } = useCartStore();
+  const customer = useCustomerAuthStore((state) => state.customer);
   const totalItems = items.reduce((acc, item) => acc + item.cantidad, 0);
 
   return (
@@ -58,6 +61,10 @@ export function Navbar() {
           </nav>
 
           <div className="flex items-center gap-3">
+            <Link href={customer ? "/cuenta" : "/cuenta/login"} className="button-secondary h-11 rounded-full px-4">
+              <UserRound className="mr-2 h-4 w-4" />
+              {customer ? "Perfil" : "Ingresar"}
+            </Link>
             <ThemeToggle />
             <button
               type="button"

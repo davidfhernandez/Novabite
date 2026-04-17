@@ -66,8 +66,14 @@ export const orderSchema = z.object({
   metodoPago: z.string().min(3),
   cupon: z.string().optional(),
   observaciones: z.string().optional(),
+  recompensaId: z.string().optional(),
 });
 
 export const orderStatusSchema = z.object({
   estado: z.enum(["pendiente", "preparando", "entregado"]),
+});
+
+export const customerLoginSchema = z.object({
+  correo: z.email(),
+  numeroDocumento: z.string().min(5),
 });

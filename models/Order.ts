@@ -3,6 +3,7 @@ import mongoose, { Model, Schema } from "mongoose";
 interface OrderDocument {
   numeroOrden: string;
   numeroFactura: string;
+  clienteId?: mongoose.Types.ObjectId;
   cliente: {
     nombre: string;
     correo: string;
@@ -37,12 +38,16 @@ interface OrderDocument {
   total: number;
   estado: "pendiente" | "preparando" | "entregado";
   observaciones?: string;
+  puntosGanados?: number;
+  puntosCanjeados?: number;
+  recompensaCanjeada?: string;
 }
 
 const orderSchema = new Schema<OrderDocument>(
   {
     numeroOrden: { type: String, required: true, unique: true },
     numeroFactura: { type: String, required: true, unique: true },
+    clienteId: { type: Schema.Types.ObjectId, ref: "Customer" },
     cliente: {
       nombre: { type: String, required: true },
       correo: { type: String, required: true },
@@ -100,6 +105,9 @@ const orderSchema = new Schema<OrderDocument>(
       enum: ["pendiente", "preparando", "entregado"],
     },
     observaciones: { type: String },
+    puntosGanados: { type: Number, default: 0 },
+    puntosCanjeados: { type: Number, default: 0 },
+    recompensaCanjeada: { type: String },
   },
   { timestamps: true },
 );

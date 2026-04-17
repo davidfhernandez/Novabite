@@ -123,6 +123,9 @@ export function OrderConfirmationClient({ order }: { order: Orden }) {
             <Link href="/menu" className="button-secondary">
               Seguir comprando
             </Link>
+            <Link href="/cuenta" className="button-secondary">
+              Ver mi perfil
+            </Link>
             <Link href="/admin/ordenes" className="button-primary">
               Ver en admin
             </Link>

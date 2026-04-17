@@ -93,6 +93,7 @@ export interface Orden {
   _id: string;
   numeroOrden: string;
   numeroFactura: string;
+  clienteId?: string;
   cliente: ClienteFacturacion;
   items: OrdenItem[];
   metodoPago: string;
@@ -103,6 +104,9 @@ export interface Orden {
   total: number;
   estado: EstadoOrden;
   observaciones?: string;
+  puntosGanados?: number;
+  puntosCanjeados?: number;
+  recompensaCanjeada?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -130,6 +134,50 @@ export interface OrdenPayload {
   metodoPago: string;
   cupon?: string;
   observaciones?: string;
+  recompensaId?: string;
+}
+
+export interface RecompensaLealtad {
+  id: string;
+  slugProducto: string;
+  nombre: string;
+  descripcion: string;
+  puntosNecesarios: number;
+}
+
+export interface ClienteCuenta {
+  _id: string;
+  nombre: string;
+  correo: string;
+  telefono: string;
+  tipoDocumento: TipoDocumento;
+  numeroDocumento: string;
+  direccion: string;
+  ciudad: string;
+  referencia?: string;
+  totalPedidos: number;
+  totalGastado: number;
+  puntosDisponibles: number;
+  puntosHistoricos: number;
+  ultimoPedidoAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ClientePerfil extends ClienteCuenta {
+  pedidos: Orden[];
+  recompensasDisponibles: RecompensaLealtad[];
+}
+
+export interface LoginClientePayload {
+  correo: string;
+  numeroDocumento: string;
+}
+
+export interface CreateOrdenResult {
+  orden: Orden;
+  cliente: ClienteCuenta;
+  cuentaCreada: boolean;
 }
 
 export interface MetricasAdmin {

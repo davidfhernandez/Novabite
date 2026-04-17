@@ -1,13 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { CreditCard, MapPinHouse, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
-import { METODOS_PAGO } from "@/lib/constants";
+import { METODOS_PAGO, PUNTOS_POR_CADA_MIL, RECOMPENSAS_LEALTAD } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
 import { useCartStore } from "@/store/use-cart-store";
+import { useCustomerAuthStore } from "@/store/use-customer-auth-store";
 import { ClienteFacturacion } from "@/types";
 
 const STEPS = [
@@ -30,31 +32,63 @@ const EMPTY_FORM: ClienteFacturacion = {
 export function CheckoutClient() {
   const router = useRouter();
   const { items, coupon, getSummary, clearCart } = useCartStore();
+  const { customer, login } = useCustomerAuthStore();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [metodoPago, setMetodoPago] = useState(METODOS_PAGO[0]);
   const [observaciones, setObservaciones] = useState("");
-  const [form, setForm] = useState<ClienteFacturacion>(EMPTY_FORM);
+  const [recompensaId, setRecompensaId] = useState("");
+  const [form, setForm] = useState<Partial<ClienteFacturacion>>({});
 
   const summary = getSummary();
   const cartIsEmpty = items.length === 0;
+  const puntosEstimados = Math.floor(summary.total / 1000) * PUNTOS_POR_CADA_MIL;
+  const recompensaSeleccionada =
+    RECOMPENSAS_LEALTAD.find((reward) => reward.id === recompensaId) ?? null;
+  const recompensasDisponibles = RECOMPENSAS_LEALTAD.filter(
+    (reward) => (customer?.puntosDisponibles ?? 0) >= reward.puntosNecesarios,
+  );
+  const customerDefaults = useMemo(
+    () =>
+      customer
+        ? {
+            nombre: customer.nombre,
+            correo: customer.correo,
+            telefono: customer.telefono,
+            tipoDocumento: customer.tipoDocumento,
+            numeroDocumento: customer.numeroDocumento,
+            direccion: customer.direccion,
+            ciudad: customer.ciudad,
+            referencia: customer.referencia ?? "",
+          }
+        : EMPTY_FORM,
+    [customer],
+  );
+  const currentForm: ClienteFacturacion = useMemo(
+    () => ({
+      ...customerDefaults,
+      ...form,
+    }),
+    [customerDefaults, form],
+  );
+
   const canGoNext = useMemo(() => {
     if (step === 1) {
       return Boolean(
-        form.nombre &&
-          form.correo &&
-          form.telefono &&
-          form.tipoDocumento &&
-          form.numeroDocumento,
+        currentForm.nombre &&
+          currentForm.correo &&
+          currentForm.telefono &&
+          currentForm.tipoDocumento &&
+          currentForm.numeroDocumento,
       );
     }
 
     if (step === 2) {
-      return Boolean(form.direccion && form.ciudad);
+      return Boolean(currentForm.direccion && currentForm.ciudad);
     }
 
     return Boolean(metodoPago);
-  }, [form, metodoPago, step]);
+  }, [currentForm, metodoPago, step]);
 
   async function submitOrder() {
     if (cartIsEmpty) {
@@ -68,7 +102,7 @@ export function CheckoutClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          cliente: form,
+          cliente: currentForm,
           items: items.map((item) => ({
             productoId: item.productoId,
             nombre: item.nombre,
@@ -82,17 +116,24 @@ export function CheckoutClient() {
           cupon: coupon,
           metodoPago,
           observaciones,
+          recompensaId: recompensaId || undefined,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("No fue posible crear la orden");
+        const data = await response.json();
+        throw new Error(data.message || "No fue posible crear la orden");
       }
 
-      const order = await response.json();
+      const result = await response.json();
+      login(result.cliente);
       clearCart();
-      toast.success("Orden creada correctamente");
-      router.push(`/confirmacion/${order._id}`);
+      toast.success(
+        result.cuentaCreada
+          ? "Orden creada y cuenta de cliente activada."
+          : "Orden creada correctamente.",
+      );
+      router.push(`/confirmacion/${result.orden._id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error inesperado");
     } finally {
@@ -147,7 +188,7 @@ export function CheckoutClient() {
                   <label className="mb-2 block text-sm text-[var(--muted)]">Nombre completo</label>
                   <input
                     className="input-shell"
-                    value={form.nombre}
+                    value={currentForm.nombre}
                     onChange={(event) => setForm({ ...form, nombre: event.target.value })}
                   />
                 </div>
@@ -156,7 +197,7 @@ export function CheckoutClient() {
                   <input
                     type="email"
                     className="input-shell"
-                    value={form.correo}
+                    value={currentForm.correo}
                     onChange={(event) => setForm({ ...form, correo: event.target.value })}
                   />
                 </div>
@@ -164,7 +205,7 @@ export function CheckoutClient() {
                   <label className="mb-2 block text-sm text-[var(--muted)]">Teléfono</label>
                   <input
                     className="input-shell"
-                    value={form.telefono}
+                    value={currentForm.telefono}
                     onChange={(event) => setForm({ ...form, telefono: event.target.value })}
                   />
                 </div>
@@ -172,7 +213,7 @@ export function CheckoutClient() {
                   <label className="mb-2 block text-sm text-[var(--muted)]">Tipo de documento</label>
                   <select
                     className="input-shell"
-                    value={form.tipoDocumento}
+                    value={currentForm.tipoDocumento}
                     onChange={(event) =>
                       setForm({
                         ...form,
@@ -189,7 +230,7 @@ export function CheckoutClient() {
                   <label className="mb-2 block text-sm text-[var(--muted)]">Número de documento</label>
                   <input
                     className="input-shell"
-                    value={form.numeroDocumento}
+                    value={currentForm.numeroDocumento}
                     onChange={(event) =>
                       setForm({ ...form, numeroDocumento: event.target.value })
                     }
@@ -204,7 +245,7 @@ export function CheckoutClient() {
                   <label className="mb-2 block text-sm text-[var(--muted)]">Dirección</label>
                   <input
                     className="input-shell"
-                    value={form.direccion}
+                    value={currentForm.direccion}
                     onChange={(event) => setForm({ ...form, direccion: event.target.value })}
                   />
                 </div>
@@ -212,7 +253,7 @@ export function CheckoutClient() {
                   <label className="mb-2 block text-sm text-[var(--muted)]">Ciudad</label>
                   <input
                     className="input-shell"
-                    value={form.ciudad}
+                    value={currentForm.ciudad}
                     onChange={(event) => setForm({ ...form, ciudad: event.target.value })}
                   />
                 </div>
@@ -220,7 +261,7 @@ export function CheckoutClient() {
                   <label className="mb-2 block text-sm text-[var(--muted)]">Referencia</label>
                   <textarea
                     className="input-shell min-h-28"
-                    value={form.referencia}
+                    value={currentForm.referencia}
                     onChange={(event) => setForm({ ...form, referencia: event.target.value })}
                     placeholder="Apartamento, portería, indicaciones para el domiciliario..."
                   />
@@ -230,6 +271,55 @@ export function CheckoutClient() {
 
             {step === 3 ? (
               <div className="space-y-4">
+                <div className="panel rounded-[24px] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">Nova Puntos</p>
+                      <p className="mt-1 text-sm text-[var(--muted)]">
+                        {customer
+                          ? `Tienes ${customer.puntosDisponibles} puntos disponibles.`
+                          : "Inicia sesión o compra por primera vez para empezar a acumular puntos."}
+                      </p>
+                    </div>
+                    {customer ? (
+                      <Link href="/cuenta" className="button-secondary">
+                        Ver perfil
+                      </Link>
+                    ) : (
+                      <Link href="/cuenta/login" className="button-secondary">
+                        Ingresar
+                      </Link>
+                    )}
+                  </div>
+                  {customer ? (
+                    <div className="mt-4 space-y-3">
+                      <label className="block text-sm text-[var(--muted)]">
+                        Canjear recompensa
+                      </label>
+                      <select
+                        className="input-shell"
+                        value={recompensaId}
+                        onChange={(event) => setRecompensaId(event.target.value)}
+                      >
+                        <option value="">No canjear en este pedido</option>
+                        {RECOMPENSAS_LEALTAD.map((reward) => (
+                          <option
+                            key={reward.id}
+                            value={reward.id}
+                            disabled={(customer.puntosDisponibles ?? 0) < reward.puntosNecesarios}
+                          >
+                            {reward.nombre} - {reward.puntosNecesarios} puntos
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-sm text-[var(--muted)]">
+                        {recompensasDisponibles.length > 0
+                          ? "Tus puntos se pueden canjear por comida gratis en este mismo checkout."
+                          : "Aún no tienes suficientes puntos para canjear una recompensa."}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
                 <div className="grid gap-3">
                   {METODOS_PAGO.map((method) => (
                     <button
@@ -335,6 +425,16 @@ export function CheckoutClient() {
             <div className="flex items-center justify-between">
               <span className="text-[var(--muted)]">IVA 19%</span>
               <span>{formatCurrency(summary.iva)}</span>
+            </div>
+            {recompensaSeleccionada ? (
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--muted)]">Canje</span>
+                <span>{recompensaSeleccionada.nombre}</span>
+              </div>
+            ) : null}
+            <div className="flex items-center justify-between">
+              <span className="text-[var(--muted)]">Puntos que ganas</span>
+              <span>{puntosEstimados}</span>
             </div>
             <div className="flex items-center justify-between border-t border-white/10 pt-4 text-base font-semibold">
               <span>Total</span>

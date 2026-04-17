@@ -1,12 +1,25 @@
 import { startOfDay } from "date-fns";
 
 import { calculateSummary } from "@/lib/calculations";
+import { PUNTOS_POR_CADA_MIL, RECOMPENSAS_LEALTAD } from "@/lib/constants";
 import { connectToDatabase } from "@/lib/mongodb";
 import { initialProducts } from "@/lib/seed";
 import { slugify, generateConsecutive } from "@/lib/utils";
+import { CustomerModel } from "@/models/Customer";
 import { OrderModel } from "@/models/Order";
 import { ProductModel } from "@/models/Product";
-import { MetricasAdmin, Orden, OrdenPayload, Producto, ProductoPayload } from "@/types";
+import {
+  ClienteCuenta,
+  ClientePerfil,
+  CreateOrdenResult,
+  LoginClientePayload,
+  MetricasAdmin,
+  Orden,
+  OrdenItem,
+  OrdenPayload,
+  Producto,
+  ProductoPayload,
+} from "@/types";
 
 type RawProduct = {
   _id: unknown;
@@ -32,6 +45,7 @@ type RawOrder = {
   _id: unknown;
   numeroOrden?: unknown;
   numeroFactura?: unknown;
+  clienteId?: unknown;
   cliente?: unknown;
   items?: unknown;
   metodoPago?: unknown;
@@ -42,6 +56,28 @@ type RawOrder = {
   total?: unknown;
   estado?: unknown;
   observaciones?: unknown;
+  puntosGanados?: unknown;
+  puntosCanjeados?: unknown;
+  recompensaCanjeada?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+};
+
+type RawCustomer = {
+  _id: unknown;
+  nombre?: unknown;
+  correo?: unknown;
+  telefono?: unknown;
+  tipoDocumento?: unknown;
+  numeroDocumento?: unknown;
+  direccion?: unknown;
+  ciudad?: unknown;
+  referencia?: unknown;
+  totalPedidos?: unknown;
+  totalGastado?: unknown;
+  puntosDisponibles?: unknown;
+  puntosHistoricos?: unknown;
+  ultimoPedidoAt?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
 };
@@ -73,6 +109,7 @@ function serializeOrder(doc: RawOrder): Orden {
     _id: String(doc._id),
     numeroOrden: String(doc.numeroOrden),
     numeroFactura: String(doc.numeroFactura),
+    clienteId: doc.clienteId ? String(doc.clienteId) : undefined,
     cliente: doc.cliente as Orden["cliente"],
     items: (doc.items as Orden["items"]) ?? [],
     metodoPago: String(doc.metodoPago),
@@ -83,9 +120,47 @@ function serializeOrder(doc: RawOrder): Orden {
     total: Number(doc.total),
     estado: doc.estado as Orden["estado"],
     observaciones: doc.observaciones ? String(doc.observaciones) : undefined,
+    puntosGanados: Number(doc.puntosGanados ?? 0),
+    puntosCanjeados: Number(doc.puntosCanjeados ?? 0),
+    recompensaCanjeada: doc.recompensaCanjeada ? String(doc.recompensaCanjeada) : undefined,
     createdAt: new Date(String(doc.createdAt)).toISOString(),
     updatedAt: doc.updatedAt ? new Date(String(doc.updatedAt)).toISOString() : undefined,
   };
+}
+
+function serializeCustomer(doc: RawCustomer): ClienteCuenta {
+  return {
+    _id: String(doc._id),
+    nombre: String(doc.nombre),
+    correo: String(doc.correo),
+    telefono: String(doc.telefono),
+    tipoDocumento: doc.tipoDocumento as ClienteCuenta["tipoDocumento"],
+    numeroDocumento: String(doc.numeroDocumento),
+    direccion: String(doc.direccion),
+    ciudad: String(doc.ciudad),
+    referencia: doc.referencia ? String(doc.referencia) : undefined,
+    totalPedidos: Number(doc.totalPedidos ?? 0),
+    totalGastado: Number(doc.totalGastado ?? 0),
+    puntosDisponibles: Number(doc.puntosDisponibles ?? 0),
+    puntosHistoricos: Number(doc.puntosHistoricos ?? 0),
+    ultimoPedidoAt: doc.ultimoPedidoAt
+      ? new Date(String(doc.ultimoPedidoAt)).toISOString()
+      : undefined,
+    createdAt: doc.createdAt ? new Date(String(doc.createdAt)).toISOString() : undefined,
+    updatedAt: doc.updatedAt ? new Date(String(doc.updatedAt)).toISOString() : undefined,
+  };
+}
+
+function getRewardById(recompensaId?: string) {
+  if (!recompensaId) {
+    return null;
+  }
+
+  return RECOMPENSAS_LEALTAD.find((reward) => reward.id === recompensaId) ?? null;
+}
+
+function normalizeCustomerEmail(email: string) {
+  return email.trim().toLowerCase();
 }
 
 export async function ensureSeedData() {
@@ -174,12 +249,78 @@ export async function getOrdenPorId(id: string) {
   return order ? serializeOrder(order) : null;
 }
 
-export async function createOrden(payload: OrdenPayload) {
+export async function createOrden(payload: OrdenPayload): Promise<CreateOrdenResult> {
   await connectToDatabase();
+  const normalizedEmail = normalizeCustomerEmail(payload.cliente.correo);
+  let customer = await CustomerModel.findOne({
+    correo: normalizedEmail,
+    numeroDocumento: payload.cliente.numeroDocumento,
+  });
+  let cuentaCreada = false;
+
+  if (!customer) {
+    customer = await CustomerModel.create({
+      ...payload.cliente,
+      correo: normalizedEmail,
+      totalPedidos: 0,
+      totalGastado: 0,
+      puntosDisponibles: 0,
+      puntosHistoricos: 0,
+    });
+    cuentaCreada = true;
+  } else {
+    customer.nombre = payload.cliente.nombre;
+    customer.telefono = payload.cliente.telefono;
+    customer.tipoDocumento = payload.cliente.tipoDocumento;
+    customer.numeroDocumento = payload.cliente.numeroDocumento;
+    customer.direccion = payload.cliente.direccion;
+    customer.ciudad = payload.cliente.ciudad;
+    customer.referencia = payload.cliente.referencia;
+    customer.correo = normalizedEmail;
+  }
+
+  const reward = getRewardById(payload.recompensaId);
+  const freeRewardProduct = reward
+    ? await ProductModel.findOne({ slug: reward.slugProducto }).lean()
+    : null;
+
+  if (reward && !freeRewardProduct) {
+    throw new Error("La recompensa seleccionada no está disponible en este momento.");
+  }
+
+  if (reward && (customer.puntosDisponibles ?? 0) < reward.puntosNecesarios) {
+    throw new Error("No tienes puntos suficientes para canjear esta recompensa.");
+  }
+
+  const rewardItem: OrdenItem[] =
+    reward && freeRewardProduct
+      ? [
+          {
+            productoId: String(freeRewardProduct._id),
+            nombre: String(freeRewardProduct.nombre),
+            slug: String(freeRewardProduct.slug),
+            imagen: (freeRewardProduct.imagenes?.[0] as string) ?? "",
+            categoria: freeRewardProduct.categoria as OrdenItem["categoria"],
+            precioBase: 0,
+            cantidad: 1,
+            personalizacionesSeleccionadas: [],
+          },
+        ]
+      : [];
+
+  const items = [...payload.items, ...rewardItem];
   const resumen = calculateSummary(payload.items, payload.cupon);
+  const puntosGanados = Math.floor(resumen.total / 1000) * PUNTOS_POR_CADA_MIL;
+  const puntosCanjeados = reward?.puntosNecesarios ?? 0;
 
   const created = await OrderModel.create({
     ...payload,
+    clienteId: customer._id,
+    cliente: {
+      ...payload.cliente,
+      correo: normalizedEmail,
+    },
+    items,
     numeroOrden: generateConsecutive("ORD"),
     numeroFactura: generateConsecutive("FAC"),
     subtotal: resumen.subtotal,
@@ -187,9 +328,24 @@ export async function createOrden(payload: OrdenPayload) {
     iva: resumen.iva,
     total: resumen.total,
     estado: "pendiente",
+    puntosGanados,
+    puntosCanjeados,
+    recompensaCanjeada: reward?.nombre,
   });
 
-  return serializeOrder(created.toObject());
+  customer.pedidos.push(created._id);
+  customer.totalPedidos += 1;
+  customer.totalGastado += resumen.total;
+  customer.puntosDisponibles = (customer.puntosDisponibles ?? 0) - puntosCanjeados + puntosGanados;
+  customer.puntosHistoricos = (customer.puntosHistoricos ?? 0) + puntosGanados;
+  customer.ultimoPedidoAt = new Date();
+  await customer.save();
+
+  return {
+    orden: serializeOrder(created.toObject()),
+    cliente: serializeCustomer(customer.toObject()),
+    cuentaCreada,
+  };
 }
 
 export async function updateOrdenEstado(id: string, estado: Orden["estado"]) {
@@ -252,5 +408,37 @@ export async function getAdminMetrics(): Promise<MetricasAdmin> {
       estado,
       total: orders.filter((order) => order.estado === estado).length,
     })),
+  };
+}
+
+export async function loginCliente(payload: LoginClientePayload) {
+  await connectToDatabase();
+  const customer = await CustomerModel.findOne({
+    correo: normalizeCustomerEmail(payload.correo),
+    numeroDocumento: payload.numeroDocumento.trim(),
+  }).lean();
+
+  if (!customer) {
+    return null;
+  }
+
+  return serializeCustomer(customer);
+}
+
+export async function getClientePerfil(id: string): Promise<ClientePerfil | null> {
+  await connectToDatabase();
+  const customer = await CustomerModel.findById(id).lean();
+
+  if (!customer) {
+    return null;
+  }
+
+  const orders = await OrderModel.find({ clienteId: id }).sort({ createdAt: -1 }).lean();
+  const baseCustomer = serializeCustomer(customer);
+
+  return {
+    ...baseCustomer,
+    pedidos: orders.map((order) => serializeOrder(order)),
+    recompensasDisponibles: RECOMPENSAS_LEALTAD,
   };
 }

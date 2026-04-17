@@ -1,4 +1,4 @@
-import { CategoriaProducto } from "@/types";
+import { CategoriaProducto, RecompensaLealtad } from "@/types";
 
 export const IVA_RATE = 0.19;
 
@@ -69,4 +69,30 @@ export const METODOS_PAGO = [
   "Nequi",
   "Daviplata",
   "Pago contra entrega",
+];
+
+export const PUNTOS_POR_CADA_MIL = 1;
+
+export const RECOMPENSAS_LEALTAD: RecompensaLealtad[] = [
+  {
+    id: "bebida-gratis",
+    slugProducto: "soda-photon",
+    nombre: "Soda Photon gratis",
+    descripcion: "Canjea una bebida artesanal completa sin costo.",
+    puntosNecesarios: 120,
+  },
+  {
+    id: "bowl-gratis",
+    slugProducto: "bowl-nebulosa-verde",
+    nombre: "Bowl Nebulosa Verde gratis",
+    descripcion: "Ideal para un canje saludable y contundente.",
+    puntosNecesarios: 260,
+  },
+  {
+    id: "burger-gratis",
+    slugProducto: "hamburguesa-andromeda",
+    nombre: "Hamburguesa Andrómeda gratis",
+    descripcion: "La recompensa premium para clientes frecuentes.",
+    puntosNecesarios: 320,
+  },
 ];

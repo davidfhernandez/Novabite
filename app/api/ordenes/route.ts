@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const payload = orderSchema.parse(body);
-    const order = await createOrden(payload);
-    return NextResponse.json(order, { status: 201 });
+    const result = await createOrden(payload);
+    return NextResponse.json(result, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "Error al crear la orden" },

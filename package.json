@@ -1,0 +1,40 @@
+{
+  "name": "novabite",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --max-warnings=0"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "framer-motion": "^12.38.0",
+    "jspdf": "^2.5.2",
+    "lucide-react": "^0.487.0",
+    "mongoose": "^9.4.1",
+    "next": "^16.2.4",
+    "next-themes": "^0.4.6",
+    "papaparse": "^5.5.3",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "recharts": "^2.15.2",
+    "sonner": "^2.0.3",
+    "zod": "^4.3.6",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/node": "^25.6.0",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "^16.2.4",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^6.0.3"
+  }
+}

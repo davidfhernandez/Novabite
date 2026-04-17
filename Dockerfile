@@ -18,12 +18,9 @@ WORKDIR /workspace
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# RUN mkdir -p public
-
 COPY --from=builder /workspace/package.json ./
 COPY --from=builder /workspace/node_modules ./node_modules
 COPY --from=builder /workspace/.next ./.next
-# COPY --from=builder /workspace/public ./public
 COPY --from=builder /workspace/next.config.ts ./
 COPY --from=builder /workspace/next-env.d.ts ./
 

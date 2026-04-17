@@ -3,12 +3,12 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import { ADMIN_CREDENTIALS } from "@/lib/constants";
-
 interface AdminAuthState {
   isAuthenticated: boolean;
+  adminId: string | null;
+  email: string | null;
   role: string | null;
-  login: (email: string, password: string) => boolean;
+  login: (payload: { id: string; email: string; role: string }) => void;
   logout: () => void;
 }
 
@@ -16,19 +16,17 @@ export const useAdminAuthStore = create<AdminAuthState>()(
   persist(
     (set) => ({
       isAuthenticated: false,
+      adminId: null,
+      email: null,
       role: null,
-      login: (email, password) => {
-        const ok =
-          email === ADMIN_CREDENTIALS.email &&
-          password === ADMIN_CREDENTIALS.password;
-
-        if (ok) {
-          set({ isAuthenticated: true, role: ADMIN_CREDENTIALS.role });
-        }
-
-        return ok;
-      },
-      logout: () => set({ isAuthenticated: false, role: null }),
+      login: ({ id, email, role }) =>
+        set({
+          isAuthenticated: true,
+          adminId: id,
+          email,
+          role,
+        }),
+      logout: () => set({ isAuthenticated: false, adminId: null, email: null, role: null }),
     }),
     {
       name: "novabite-admin-auth",

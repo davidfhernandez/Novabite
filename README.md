@@ -11,7 +11,7 @@ Aplicación web de e-commerce para restaurante construida con `Next.js App Route
 - Checkout multi-step funcional.
 - Creación real de órdenes en MongoDB.
 - Factura PDF con formato colombiano simulado.
-- Panel admin con login mock, dashboard, CRUD de productos, gestión de órdenes y exportación CSV.
+- Panel admin con login persistente validado contra MongoDB, dashboard, CRUD de productos, gestión de órdenes y exportación CSV.
 
 ## Configuración
 
@@ -38,7 +38,10 @@ npm run lint
 npm run build
 ```
 
-## Credenciales admin mock
+## Admin inicial
 
-- Email: `admin@novabite.com`
-- Password: `Nova123*`
+El primer usuario admin se crea automáticamente en la colección `AdminUser` usando estas variables de entorno:
+
+- `ADMIN_SEED_EMAIL`
+- `ADMIN_SEED_PASSWORD`
+- `ADMIN_SEED_ROLE`

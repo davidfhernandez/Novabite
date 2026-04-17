@@ -10,12 +10,6 @@ export const NEGOCIO = {
   correo: "hola@novabite.co",
 };
 
-export const ADMIN_CREDENTIALS = {
-  email: "admin@novabite.com",
-  password: "Nova123*",
-  role: "admin",
-};
-
 export const CATEGORIAS: Array<{
   id: CategoriaProducto;
   nombre: string;

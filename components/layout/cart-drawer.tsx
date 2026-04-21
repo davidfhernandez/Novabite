@@ -52,10 +52,11 @@ export function CartDrawer() {
               </div>
               <button
                 type="button"
-                className="button-secondary h-11 w-11 rounded-full"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/6 text-white transition hover:bg-white/12"
                 onClick={() => setOpen(false)}
+                aria-label="Cerrar carrito"
               >
-                <X className="h-4 w-4" />
+                <X className="h-[1.15rem] w-[1.15rem] stroke-[2.6]" />
               </button>
             </div>
 

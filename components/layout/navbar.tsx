@@ -26,6 +26,7 @@ export function Navbar() {
   const customer = useCustomerAuthStore((state) => state.customer);
   const [mobileOpen, setMobileOpen] = useState(false);
   const totalItems = items.reduce((acc, item) => acc + item.cantidad, 0);
+  const activeLabel = customer ? "Perfil" : "Ingresar";
 
   return (
     <>
@@ -73,22 +74,25 @@ export function Navbar() {
             </Link>
             <Link
               href={customer ? "/cuenta" : "/cuenta/login"}
-              className="button-secondary inline-flex h-10 w-10 rounded-full md:hidden sm:h-11 sm:w-11"
+              className="button-secondary hidden h-10 w-10 rounded-full md:hidden sm:h-11 sm:w-11 min-[480px]:inline-flex"
               aria-label={customer ? "Ir a perfil" : "Ingresar"}
               onClick={() => setMobileOpen(false)}
             >
-              <UserRound className="h-4 w-4" />
+              <UserRound className="h-[1.15rem] w-[1.15rem] stroke-[2.3]" />
             </Link>
-            <ThemeToggle />
+            <div className="hidden min-[480px]:block">
+              <ThemeToggle />
+            </div>
             <button
               type="button"
-              className="button-secondary relative inline-flex h-10 items-center rounded-full px-3 sm:h-11 sm:px-4"
+              className="button-secondary relative hidden h-10 items-center rounded-full px-3 md:inline-flex sm:h-11 sm:px-4"
               onClick={() => {
                 setMobileOpen(false);
                 setOpen(true);
               }}
+              aria-label="Abrir carrito"
             >
-              <ShoppingCart className="h-4 w-4 sm:mr-2" />
+              <ShoppingCart className="h-[1.15rem] w-[1.15rem] stroke-[2.3] sm:mr-2" />
               <span className="hidden md:inline">Carrito</span>
               {totalItems > 0 ? (
                 <motion.span
@@ -103,11 +107,20 @@ export function Navbar() {
             </button>
             <button
               type="button"
-              className="button-secondary inline-flex h-10 w-10 rounded-full lg:hidden sm:h-11 sm:w-11"
+              className={cn(
+                "inline-flex h-10 w-10 items-center justify-center rounded-full border transition lg:hidden sm:h-11 sm:w-11",
+                mobileOpen
+                  ? "border-violet-400/50 bg-violet-500/20 text-white shadow-lg shadow-violet-500/15"
+                  : "border-white/10 bg-white/5 text-[var(--foreground)]",
+              )}
               onClick={() => setMobileOpen((current) => !current)}
               aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
             >
-              {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              {mobileOpen ? (
+                <X className="h-[1.2rem] w-[1.2rem] stroke-[2.6]" />
+              ) : (
+                <Menu className="h-[1.2rem] w-[1.2rem] stroke-[2.6]" />
+              )}
             </button>
           </div>
         </div>
@@ -130,6 +143,61 @@ export function Navbar() {
               exit={{ opacity: 0, y: -16 }}
               className="panel-strong fixed inset-x-4 top-20 z-50 rounded-[28px] p-4 sm:top-24 lg:hidden"
             >
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-[24px] border border-white/10 bg-white/5 p-3">
+                <div className="min-w-0">
+                  <p className="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">
+                    Accesos rápidos
+                  </p>
+                  <p className="truncate text-sm font-semibold text-white">
+                    {customer ? customer.nombre : "Tu cuenta y pedidos"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white"
+                  onClick={() => setMobileOpen(false)}
+                  aria-label="Cerrar menú"
+                >
+                  <X className="h-[1.1rem] w-[1.1rem] stroke-[2.5]" />
+                </button>
+              </div>
+
+              <div className="mb-4 grid gap-2 min-[420px]:grid-cols-2">
+                <Link
+                  href={customer ? "/cuenta" : "/cuenta/login"}
+                  onClick={() => setMobileOpen(false)}
+                  className="button-secondary justify-start rounded-2xl px-4 py-3"
+                >
+                  <UserRound className="mr-3 h-[1.05rem] w-[1.05rem] stroke-[2.3]" />
+                  {activeLabel}
+                </Link>
+                <button
+                  type="button"
+                  className="button-secondary justify-start rounded-2xl px-4 py-3"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    setOpen(true);
+                  }}
+                >
+                  <ShoppingCart className="mr-3 h-[1.05rem] w-[1.05rem] stroke-[2.3]" />
+                  Carrito
+                  {totalItems > 0 ? (
+                    <span className="ml-3 inline-flex min-w-6 items-center justify-center rounded-full bg-[var(--primary)] px-2 py-1 text-xs font-semibold text-white">
+                      {totalItems}
+                    </span>
+                  ) : null}
+                </button>
+                <div className="min-[420px]:col-span-2 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">Tema</p>
+                    <p className="text-xs text-[var(--muted)]">
+                      Cambia entre modo claro y oscuro
+                    </p>
+                  </div>
+                  <ThemeToggle />
+                </div>
+              </div>
+
               <nav className="grid gap-2">
                 {links.map((link) => {
                   const active =
@@ -143,7 +211,7 @@ export function Navbar() {
                         "rounded-2xl px-4 py-3 text-sm transition",
                         active
                           ? "bg-white/10 text-white"
-                          : "bg-white/5 text-[var(--muted)]",
+                          : "bg-white/5 text-[var(--muted)] hover:text-white",
                       )}
                     >
                       {link.label}

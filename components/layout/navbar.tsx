@@ -72,14 +72,14 @@ export function Navbar() {
               <UserRound className="mr-2 h-4 w-4" />
               {customer ? "Perfil" : "Ingresar"}
             </Link>
-            <Link
+            {/* <Link
               href={customer ? "/cuenta" : "/cuenta/login"}
               className="button-secondary hidden h-10 w-10 rounded-full md:hidden sm:h-11 sm:w-11 min-[480px]:inline-flex"
               aria-label={customer ? "Ir a perfil" : "Ingresar"}
               onClick={() => setMobileOpen(false)}
             >
               <UserRound className="h-[1.15rem] w-[1.15rem] stroke-[2.3]" />
-            </Link>
+            </Link> */}
             <div className="hidden min-[480px]:block">
               <ThemeToggle />
             </div>

@@ -1,7 +1,15 @@
 import { startOfDay } from "date-fns";
 
 import { calculateSummary } from "@/lib/calculations";
-import { PUNTOS_POR_CADA_MIL, RECOMPENSAS_LEALTAD } from "@/lib/constants";
+import {
+  MINI_JUEGO_COOLDOWN_HORAS,
+  MINI_JUEGO_DURACION_SEGUNDOS,
+  MINI_JUEGO_PUNTAJE_MAXIMO_VALIDO,
+  MINI_JUEGO_PUNTOS_MAXIMOS,
+  MINI_JUEGO_PUNTOS_POR_ACIERTO,
+  PUNTOS_POR_CADA_MIL,
+  RECOMPENSAS_LEALTAD,
+} from "@/lib/constants";
 import { connectToDatabase } from "@/lib/mongodb";
 import { initialProducts } from "@/lib/seed";
 import { slugify, generateConsecutive } from "@/lib/utils";
@@ -16,6 +24,8 @@ import {
   CreateOrdenResult,
   LoginClientePayload,
   MetricasAdmin,
+  MiniJuegoPayload,
+  MiniJuegoResultado,
   Orden,
   OrdenItem,
   OrdenPayload,
@@ -82,6 +92,10 @@ type RawCustomer = {
   puntosDisponibles?: unknown;
   puntosHistoricos?: unknown;
   ultimoPedidoAt?: unknown;
+  miniJuegoUltimoIntentoAt?: unknown;
+  miniJuegoUltimoPuntaje?: unknown;
+  miniJuegoMejorPuntaje?: unknown;
+  miniJuegoPartidas?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
 };
@@ -165,6 +179,26 @@ function getRewardById(recompensaId?: string) {
 
 function normalizeCustomerEmail(email: string) {
   return email.trim().toLowerCase();
+}
+
+function buildMiniGameStatus(doc: RawCustomer): ClientePerfil["minijuego"] {
+  const cooldownMs = MINI_JUEGO_COOLDOWN_HORAS * 60 * 60 * 1000;
+  const lastAttempt = doc.miniJuegoUltimoIntentoAt
+    ? new Date(String(doc.miniJuegoUltimoIntentoAt))
+    : null;
+  const availableAt = lastAttempt ? new Date(lastAttempt.getTime() + cooldownMs) : null;
+  const available = !availableAt || availableAt.getTime() <= Date.now();
+
+  return {
+    disponible: available,
+    duracionSegundos: MINI_JUEGO_DURACION_SEGUNDOS,
+    cooldownHoras: MINI_JUEGO_COOLDOWN_HORAS,
+    disponibleDesde: !available && availableAt ? availableAt.toISOString() : undefined,
+    ultimoIntentoAt: lastAttempt?.toISOString(),
+    ultimoPuntaje: Number(doc.miniJuegoUltimoPuntaje ?? 0),
+    mejorPuntaje: Number(doc.miniJuegoMejorPuntaje ?? 0),
+    partidasJugadas: Number(doc.miniJuegoPartidas ?? 0),
+  };
 }
 
 async function markCatalogSeeded() {
@@ -614,6 +648,58 @@ export async function getClientePerfil(id: string): Promise<ClientePerfil | null
     ...baseCustomer,
     pedidos: orders.map((order) => serializeOrder(order)),
     recompensasDisponibles: RECOMPENSAS_LEALTAD,
+    minijuego: buildMiniGameStatus(customer),
+  };
+}
+
+export async function reclamarPuntosMiniJuego(
+  id: string,
+  payload: MiniJuegoPayload,
+): Promise<MiniJuegoResultado | null> {
+  await connectToDatabase();
+  const customer = await CustomerModel.findById(id);
+
+  if (!customer) {
+    return null;
+  }
+
+  const now = new Date();
+  const cooldownMs = MINI_JUEGO_COOLDOWN_HORAS * 60 * 60 * 1000;
+  const nextAvailableAt = customer.miniJuegoUltimoIntentoAt
+    ? new Date(customer.miniJuegoUltimoIntentoAt.getTime() + cooldownMs)
+    : null;
+
+  if (nextAvailableAt && nextAvailableAt.getTime() > now.getTime()) {
+    throw new Error("Ya jugaste tu ronda reciente. Espera al próximo reinicio para volver a ganar puntos.");
+  }
+
+  if (payload.elapsedMs > MINI_JUEGO_DURACION_SEGUNDOS * 1000 + 1_500) {
+    throw new Error("La partida expiró. Inicia una nueva ronda para reclamar puntos.");
+  }
+
+  const score = Math.min(payload.score, MINI_JUEGO_PUNTAJE_MAXIMO_VALIDO);
+  const puntosGanados = Math.min(
+    MINI_JUEGO_PUNTOS_MAXIMOS,
+    score * MINI_JUEGO_PUNTOS_POR_ACIERTO,
+  );
+
+  customer.puntosDisponibles = (customer.puntosDisponibles ?? 0) + puntosGanados;
+  customer.puntosHistoricos = (customer.puntosHistoricos ?? 0) + puntosGanados;
+  customer.miniJuegoUltimoIntentoAt = now;
+  customer.miniJuegoUltimoPuntaje = score;
+  customer.miniJuegoMejorPuntaje = Math.max(customer.miniJuegoMejorPuntaje ?? 0, score);
+  customer.miniJuegoPartidas = (customer.miniJuegoPartidas ?? 0) + 1;
+  await customer.save();
+
+  const profile = await getClientePerfil(id);
+
+  if (!profile) {
+    throw new Error("No fue posible sincronizar tu cuenta después del juego.");
+  }
+
+  return {
+    puntosGanados,
+    perfil: profile,
   };
 }
 

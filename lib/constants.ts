@@ -67,6 +67,12 @@ export const METODOS_PAGO = [
 
 export const PUNTOS_POR_CADA_MIL = 1;
 
+export const MINI_JUEGO_DURACION_SEGUNDOS = 20;
+export const MINI_JUEGO_COOLDOWN_HORAS = 0;
+export const MINI_JUEGO_PUNTOS_POR_ACIERTO = 2;
+export const MINI_JUEGO_PUNTOS_MAXIMOS = 30;
+export const MINI_JUEGO_PUNTAJE_MAXIMO_VALIDO = 60;
+
 export const RECOMPENSAS_LEALTAD: RecompensaLealtad[] = [
   {
     id: "bebida-gratis",

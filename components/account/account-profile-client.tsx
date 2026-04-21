@@ -11,9 +11,10 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { LoyaltyMiniGame } from "@/components/account/loyalty-mini-game";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useCustomerAuthStore } from "@/store/use-customer-auth-store";
 import { ClienteFacturacion, ClientePerfil } from "@/types";
@@ -35,6 +36,14 @@ export function AccountProfileClient() {
     referencia: "",
   });
 
+  const applyProfile = useCallback(
+    (data: ClientePerfil) => {
+      setProfile(data);
+      updateCustomer(data);
+    },
+    [updateCustomer],
+  );
+
   useEffect(() => {
     async function loadProfile() {
       if (!customer?._id) {
@@ -49,7 +58,7 @@ export function AccountProfileClient() {
         }
 
         const data: ClientePerfil = await response.json();
-        setProfile(data);
+        applyProfile(data);
         setForm({
           nombre: data.nombre,
           correo: data.correo,
@@ -60,7 +69,6 @@ export function AccountProfileClient() {
           ciudad: data.ciudad,
           referencia: data.referencia ?? "",
         });
-        updateCustomer(data);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Error inesperado");
       } finally {
@@ -69,7 +77,7 @@ export function AccountProfileClient() {
     }
 
     void loadProfile();
-  }, [customer?._id, updateCustomer]);
+  }, [applyProfile, customer?._id]);
 
   if (!customer) {
     return (
@@ -122,8 +130,7 @@ export function AccountProfileClient() {
       }
 
       const data: ClientePerfil = await response.json();
-      setProfile(data);
-      updateCustomer(data);
+      applyProfile(data);
       setForm({
         nombre: data.nombre,
         correo: data.correo,
@@ -335,6 +342,12 @@ export function AccountProfileClient() {
               Ir a canjear
             </Link>
           </div>
+
+          <LoyaltyMiniGame
+            customerId={customer._id}
+            game={profile.minijuego}
+            onProfileUpdate={applyProfile}
+          />
 
           <div className="panel-strong rounded-[32px] p-6">
             <div className="flex items-center gap-3">

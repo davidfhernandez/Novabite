@@ -81,3 +81,8 @@ export const customerLoginSchema = z.object({
 });
 
 export const customerProfileSchema = clienteSchema;
+
+export const miniGameClaimSchema = z.object({
+  score: z.number().int().min(0).max(80),
+  elapsedMs: z.number().int().min(1_000).max(60_000),
+});

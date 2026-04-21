@@ -15,6 +15,10 @@ interface CustomerDocument {
   puntosDisponibles: number;
   puntosHistoricos: number;
   ultimoPedidoAt?: Date;
+  miniJuegoUltimoIntentoAt?: Date;
+  miniJuegoUltimoPuntaje: number;
+  miniJuegoMejorPuntaje: number;
+  miniJuegoPartidas: number;
 }
 
 const customerSchema = new Schema<CustomerDocument>(
@@ -37,6 +41,10 @@ const customerSchema = new Schema<CustomerDocument>(
     puntosDisponibles: { type: Number, default: 0 },
     puntosHistoricos: { type: Number, default: 0 },
     ultimoPedidoAt: { type: Date },
+    miniJuegoUltimoIntentoAt: { type: Date },
+    miniJuegoUltimoPuntaje: { type: Number, default: 0 },
+    miniJuegoMejorPuntaje: { type: Number, default: 0 },
+    miniJuegoPartidas: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

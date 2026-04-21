@@ -164,9 +164,21 @@ export interface ClienteCuenta {
   updatedAt?: string;
 }
 
+export interface EstadoMiniJuego {
+  disponible: boolean;
+  duracionSegundos: number;
+  cooldownHoras: number;
+  disponibleDesde?: string;
+  ultimoIntentoAt?: string;
+  ultimoPuntaje: number;
+  mejorPuntaje: number;
+  partidasJugadas: number;
+}
+
 export interface ClientePerfil extends ClienteCuenta {
   pedidos: Orden[];
   recompensasDisponibles: RecompensaLealtad[];
+  minijuego: EstadoMiniJuego;
 }
 
 export interface LoginClientePayload {
@@ -178,6 +190,16 @@ export interface CreateOrdenResult {
   orden: Orden;
   cliente: ClienteCuenta;
   cuentaCreada: boolean;
+}
+
+export interface MiniJuegoPayload {
+  score: number;
+  elapsedMs: number;
+}
+
+export interface MiniJuegoResultado {
+  puntosGanados: number;
+  perfil: ClientePerfil;
 }
 
 export interface MetricasAdmin {

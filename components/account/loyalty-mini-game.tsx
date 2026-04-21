@@ -96,9 +96,10 @@ export function LoyaltyMiniGame({
         toast.error(error instanceof Error ? error.message : "Error inesperado");
       } finally {
         setSubmitting(false);
+        setTimeLeftMs(durationMs);
       }
     },
-    [customerId, onProfileUpdate],
+    [customerId, durationMs, onProfileUpdate],
   );
 
   useEffect(() => {
@@ -196,6 +197,9 @@ export function LoyaltyMiniGame({
           <p className="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">Estado</p>
           <p className="mt-2 text-lg font-semibold">
             {submitting ? "Guardando..." : playing ? "En juego" : "Listo"}
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            {customerId ? "Sesión activa detectada" : "Debes iniciar sesión"}
           </p>
         </div>
       </div>

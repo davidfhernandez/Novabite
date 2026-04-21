@@ -1,18 +1,38 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Mail, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { useHydrated } from "@/lib/use-hydrated";
 import { useCustomerAuthStore } from "@/store/use-customer-auth-store";
 
 export function AccountLoginClient() {
   const router = useRouter();
+  const hydrated = useHydrated();
   const login = useCustomerAuthStore((state) => state.login);
+  const isAuthenticated = useCustomerAuthStore((state) => state.isAuthenticated);
+  const customer = useCustomerAuthStore((state) => state.customer);
   const [correo, setCorreo] = useState("");
   const [numeroDocumento, setNumeroDocumento] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (hydrated && isAuthenticated && customer?._id) {
+      router.replace("/cuenta");
+    }
+  }, [customer?._id, hydrated, isAuthenticated, router]);
+
+  if (hydrated && isAuthenticated && customer?._id) {
+    return (
+      <section className="section-shell flex min-h-[calc(100vh-12rem)] items-center justify-center py-12">
+        <div className="panel-strong w-full max-w-lg rounded-[34px] p-8 text-center">
+          Redirigiendo a tu cuenta...
+        </div>
+      </section>
+    );
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,6 +79,8 @@ export function AccountLoginClient() {
               type="email"
               className="input-shell pl-11"
               placeholder="Correo"
+              autoComplete="email"
+              required
               value={correo}
               onChange={(event) => setCorreo(event.target.value)}
             />
@@ -68,6 +90,8 @@ export function AccountLoginClient() {
             <input
               className="input-shell pl-11"
               placeholder="Número de documento"
+              autoComplete="off"
+              required
               value={numeroDocumento}
               onChange={(event) => setNumeroDocumento(event.target.value)}
             />

@@ -304,47 +304,55 @@ export function ProductsManager({ initialProducts }: { initialProducts: Producto
         </div>
 
         <div className="panel-strong rounded-[30px] p-4 sm:p-5">
-          <div className="space-y-3">
-            {filtered.map((product) => (
-              <article
-                key={product._id}
-                className="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-white/10 bg-white/5 p-4"
-              >
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-lg font-semibold">{product.nombre}</h2>
-                    {product.stock <= 5 ? (
-                      <span className="rounded-full bg-amber-400/20 px-3 py-1 text-xs text-amber-300">
-                        Bajo stock
-                      </span>
-                    ) : null}
+          {filtered.length === 0 ? (
+            <div className="rounded-[24px] border border-white/10 bg-white/5 p-5 text-sm text-[var(--muted)]">
+              {products.length === 0
+                ? "Aún no hay productos registrados. Crea el primero desde este formulario."
+                : "No encontramos productos con ese filtro. Prueba otra búsqueda."}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filtered.map((product) => (
+                <article
+                  key={product._id}
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-white/10 bg-white/5 p-4"
+                >
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-lg font-semibold">{product.nombre}</h2>
+                      {product.stock <= 5 ? (
+                        <span className="rounded-full bg-amber-400/20 px-3 py-1 text-xs text-amber-300">
+                          Bajo stock
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-2 text-sm text-[var(--muted)]">{product.descripcion}</p>
+                    <p className="mt-3 text-sm">
+                      {product.categoria} · {formatCurrency(product.precio)} · Stock {product.stock}
+                    </p>
                   </div>
-                  <p className="mt-2 text-sm text-[var(--muted)]">{product.descripcion}</p>
-                  <p className="mt-3 text-sm">
-                    {product.categoria} · {formatCurrency(product.precio)} · Stock {product.stock}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="button-secondary"
-                    onClick={() => hydrateForm(product)}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    className="button-secondary text-red-300"
-                    onClick={() => handleDelete(product._id)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Eliminar
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="button-secondary"
+                      onClick={() => hydrateForm(product)}
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="button-secondary text-red-300"
+                      onClick={() => handleDelete(product._id)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Eliminar
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>

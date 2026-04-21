@@ -182,67 +182,75 @@ export function OrdersManager({ initialOrders }: { initialOrders: Orden[] }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((order) => (
-                <tr key={order._id} className="border-t border-white/10">
-                  <td className="px-6 py-4">
-                    <div>
-                      <p className="font-semibold">{order.numeroOrden}</p>
-                      <p className="text-xs text-[var(--muted)]">{order.numeroFactura}</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div>
-                      <p className="font-semibold">{order.cliente.nombre}</p>
-                      <p className="text-xs text-[var(--muted)]">
-                        {order.cliente.tipoDocumento} {order.cliente.numeroDocumento}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">{formatDate(order.createdAt)}</td>
-                  <td className="px-6 py-4">
-                    <select
-                      className="input-shell min-w-36"
-                      value={order.estado}
-                      onChange={(event) =>
-                        updateStatus(order._id, event.target.value as Orden["estado"])
-                      }
-                    >
-                      <option value="pendiente">Pendiente</option>
-                      <option value="preparando">Preparando</option>
-                      <option value="entregado">Entregado</option>
-                    </select>
-                  </td>
-                  <td className="px-6 py-4 font-semibold">{formatCurrency(order.total)}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        className="button-secondary"
-                        onClick={() => setSelectedOrder(order)}
-                      >
-                        Ver detalle
-                      </button>
-                      <button
-                        type="button"
-                        className="button-primary"
-                        onClick={() => downloadInvoicePdf(order)}
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Factura
-                      </button>
-                      <button
-                        type="button"
-                        className="button-secondary text-red-300"
-                        onClick={() => handleDelete(order._id)}
-                        disabled={deletingId === order._id}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {deletingId === order._id ? "Eliminando..." : "Eliminar"}
-                      </button>
-                    </div>
+              {filtered.length === 0 ? (
+                <tr className="border-t border-white/10">
+                  <td colSpan={6} className="px-6 py-8 text-center text-[var(--muted)]">
+                    No encontramos órdenes con ese filtro.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filtered.map((order) => (
+                  <tr key={order._id} className="border-t border-white/10">
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-semibold">{order.numeroOrden}</p>
+                        <p className="text-xs text-[var(--muted)]">{order.numeroFactura}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-semibold">{order.cliente.nombre}</p>
+                        <p className="text-xs text-[var(--muted)]">
+                          {order.cliente.tipoDocumento} {order.cliente.numeroDocumento}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">{formatDate(order.createdAt)}</td>
+                    <td className="px-6 py-4">
+                      <select
+                        className="input-shell min-w-36"
+                        value={order.estado}
+                        onChange={(event) =>
+                          updateStatus(order._id, event.target.value as Orden["estado"])
+                        }
+                      >
+                        <option value="pendiente">Pendiente</option>
+                        <option value="preparando">Preparando</option>
+                        <option value="entregado">Entregado</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-4 font-semibold">{formatCurrency(order.total)}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="button-secondary"
+                          onClick={() => setSelectedOrder(order)}
+                        >
+                          Ver detalle
+                        </button>
+                        <button
+                          type="button"
+                          className="button-primary"
+                          onClick={() => downloadInvoicePdf(order)}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Factura
+                        </button>
+                        <button
+                          type="button"
+                          className="button-secondary text-red-300"
+                          onClick={() => handleDelete(order._id)}
+                          disabled={deletingId === order._id}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {deletingId === order._id ? "Eliminando..." : "Eliminar"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

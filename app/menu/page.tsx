@@ -3,8 +3,13 @@ import { getProductos } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
-export default async function MenuPage() {
+export default async function MenuPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ categoria?: string }>;
+}) {
   const products = await getProductos();
+  const { categoria } = await searchParams;
 
   return (
     <section className="section-shell py-12">
@@ -19,7 +24,7 @@ export default async function MenuPage() {
           Filtra, busca y agrega al carrito con una experiencia optimizada para móvil y desktop.
         </p>
       </div>
-      <MenuExplorer products={products} />
+      <MenuExplorer products={products} initialCategory={categoria ?? "todas"} />
     </section>
   );
 }

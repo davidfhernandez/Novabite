@@ -12,6 +12,7 @@ import { Producto } from "@/types";
 
 export function ProductCard({ product }: { product: Producto }) {
   const addItem = useCartStore((state) => state.addItem);
+  const unavailable = !product.disponible || product.stock <= 0;
 
   return (
     <motion.article
@@ -35,7 +36,7 @@ export function ProductCard({ product }: { product: Producto }) {
             </span>
             {product.stock <= 5 ? (
               <span className="rounded-full bg-amber-400/90 px-3 py-1 text-xs font-semibold text-slate-950">
-                Bajo stock
+                {product.stock <= 0 ? "Agotado" : "Bajo stock"}
               </span>
             ) : null}
           </div>
@@ -65,14 +66,18 @@ export function ProductCard({ product }: { product: Producto }) {
           </div>
           <button
             type="button"
-            className="button-primary"
+            className={unavailable ? "button-secondary opacity-60" : "button-primary"}
+            disabled={unavailable}
             onClick={() => {
+              if (unavailable) {
+                return;
+              }
               addItem(product, 1, []);
               toast.success(`${product.nombre} agregado al carrito`);
             }}
           >
             <ShoppingCart className="mr-2 h-4 w-4" />
-            Agregar
+            {unavailable ? "No disponible" : "Agregar"}
           </button>
         </div>
       </div>

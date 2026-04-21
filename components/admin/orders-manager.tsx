@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Search, X } from "lucide-react";
+import { Download, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { downloadInvoicePdf } from "@/lib/pdf";
@@ -12,6 +12,7 @@ export function OrdersManager({ initialOrders }: { initialOrders: Orden[] }) {
   const [orders, setOrders] = useState(initialOrders);
   const [query, setQuery] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Orden | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -45,6 +46,36 @@ export function OrdersManager({ initialOrders }: { initialOrders: Orden[] }) {
     }
   }
 
+  async function handleDelete(id: string) {
+    const confirmed = window.confirm(
+      "¿Eliminar esta orden? Se restaurará el inventario y se revertirán los puntos del cliente.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+      const response = await fetch(`/api/ordenes/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "No se pudo eliminar la orden");
+      }
+
+      setOrders((current) => current.filter((order) => order._id !== id));
+      setSelectedOrder((current) => (current?._id === id ? null : current));
+      toast.success("Orden eliminada");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error inesperado");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="panel rounded-[28px] p-4">
@@ -60,19 +91,85 @@ export function OrdersManager({ initialOrders }: { initialOrders: Orden[] }) {
       </div>
 
       <div className="panel-strong overflow-hidden rounded-[30px]">
-        <div className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-5">
+        <div className="flex flex-col gap-4 border-b border-white/10 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div>
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">
               Gestión de órdenes
             </p>
             <h1 className="mt-2 text-3xl font-semibold">Pedidos y facturas</h1>
           </div>
-          <a href="/api/exportar/ordenes" className="button-secondary">
+          <a href="/api/exportar/ordenes" className="button-secondary w-full justify-center sm:w-auto">
             Exportar CSV
           </a>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="space-y-4 p-4 md:hidden">
+          {filtered.length === 0 ? (
+            <div className="rounded-[24px] border border-white/10 bg-white/5 p-5 text-sm text-[var(--muted)]">
+              No encontramos órdenes con ese filtro.
+            </div>
+          ) : (
+            filtered.map((order) => (
+              <article
+                key={order._id}
+                className="rounded-[24px] border border-white/10 bg-white/5 p-4"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold">{order.numeroOrden}</p>
+                    <p className="text-xs text-[var(--muted)]">{order.numeroFactura}</p>
+                  </div>
+                  <span className="text-sm font-semibold">{formatCurrency(order.total)}</span>
+                </div>
+                <div className="mt-4 space-y-2 text-sm text-[var(--muted)]">
+                  <p>{order.cliente.nombre}</p>
+                  <p>{formatDate(order.createdAt)}</p>
+                </div>
+                <div className="mt-4">
+                  <select
+                    className="input-shell"
+                    value={order.estado}
+                    onChange={(event) =>
+                      updateStatus(order._id, event.target.value as Orden["estado"])
+                    }
+                  >
+                    <option value="pendiente">Pendiente</option>
+                    <option value="preparando">Preparando</option>
+                    <option value="entregado">Entregado</option>
+                  </select>
+                </div>
+                <div className="mt-4 grid gap-2">
+                  <button
+                    type="button"
+                    className="button-secondary w-full justify-center"
+                    onClick={() => setSelectedOrder(order)}
+                  >
+                    Ver detalle
+                  </button>
+                  <button
+                    type="button"
+                    className="button-primary w-full justify-center"
+                    onClick={() => downloadInvoicePdf(order)}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Factura
+                  </button>
+                  <button
+                    type="button"
+                    className="button-secondary w-full justify-center text-red-300"
+                    onClick={() => handleDelete(order._id)}
+                    disabled={deletingId === order._id}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {deletingId === order._id ? "Eliminando..." : "Eliminar"}
+                  </button>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-white/5 text-[var(--muted)]">
               <tr>
@@ -133,6 +230,15 @@ export function OrdersManager({ initialOrders }: { initialOrders: Orden[] }) {
                         <Download className="mr-2 h-4 w-4" />
                         Factura
                       </button>
+                      <button
+                        type="button"
+                        className="button-secondary text-red-300"
+                        onClick={() => handleDelete(order._id)}
+                        disabled={deletingId === order._id}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {deletingId === order._id ? "Eliminando..." : "Eliminar"}
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -144,8 +250,8 @@ export function OrdersManager({ initialOrders }: { initialOrders: Orden[] }) {
 
       {selectedOrder ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="panel-strong scrollbar-thin max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[32px] p-6">
-            <div className="flex items-start justify-between gap-4">
+          <div className="panel-strong scrollbar-thin max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[32px] p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">
                   Detalle de orden

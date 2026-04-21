@@ -4,6 +4,7 @@ import { Manrope, Space_Grotesk } from "next/font/google";
 import { Footer } from "@/components/layout/footer";
 import { FloatingOrderButton } from "@/components/layout/floating-order-button";
 import { Navbar } from "@/components/layout/navbar";
+import { SupportChatbot } from "@/components/layout/support-chatbot";
 import { AppProviders } from "@/components/providers/app-providers";
 
 import "./globals.css";
@@ -38,6 +39,7 @@ export default function RootLayout({
             <main className="flex-1">{children}</main>
             <Footer />
             <FloatingOrderButton />
+            <SupportChatbot />
           </div>
         </AppProviders>
       </body>

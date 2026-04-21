@@ -102,10 +102,16 @@ textarea {
   @apply inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition duration-300;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.02);
+  color: var(--foreground);
 }
 
 .button-secondary:hover {
   background: rgba(255, 255, 255, 0.06);
+}
+
+.button-primary svg,
+.button-secondary svg {
+  flex-shrink: 0;
 }
 
 .input-shell {

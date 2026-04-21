@@ -1,18 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { Gift, LogOut, ReceiptText, Sparkles, UserRound } from "lucide-react";
+import {
+  Gift,
+  LogOut,
+  Pencil,
+  ReceiptText,
+  Save,
+  Sparkles,
+  UserRound,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useCustomerAuthStore } from "@/store/use-customer-auth-store";
-import { ClientePerfil } from "@/types";
+import { ClienteFacturacion, ClientePerfil } from "@/types";
 
 export function AccountProfileClient() {
   const { customer, updateCustomer, logout } = useCustomerAuthStore();
   const [profile, setProfile] = useState<ClientePerfil | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<ClienteFacturacion>({
+    nombre: "",
+    correo: "",
+    telefono: "",
+    tipoDocumento: "CC",
+    numeroDocumento: "",
+    direccion: "",
+    ciudad: "",
+    referencia: "",
+  });
 
   useEffect(() => {
     async function loadProfile() {
@@ -29,6 +50,16 @@ export function AccountProfileClient() {
 
         const data: ClientePerfil = await response.json();
         setProfile(data);
+        setForm({
+          nombre: data.nombre,
+          correo: data.correo,
+          telefono: data.telefono,
+          tipoDocumento: data.tipoDocumento,
+          numeroDocumento: data.numeroDocumento,
+          direccion: data.direccion,
+          ciudad: data.ciudad,
+          referencia: data.referencia ?? "",
+        });
         updateCustomer(data);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Error inesperado");
@@ -72,38 +103,214 @@ export function AccountProfileClient() {
     );
   }
 
+  async function handleSaveProfile() {
+    if (!customer?._id) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const response = await fetch(`/api/cuenta/${customer._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "No fue posible actualizar tu cuenta");
+      }
+
+      const data: ClientePerfil = await response.json();
+      setProfile(data);
+      updateCustomer(data);
+      setForm({
+        nombre: data.nombre,
+        correo: data.correo,
+        telefono: data.telefono,
+        tipoDocumento: data.tipoDocumento,
+        numeroDocumento: data.numeroDocumento,
+        direccion: data.direccion,
+        ciudad: data.ciudad,
+        referencia: data.referencia ?? "",
+      });
+      setEditing(false);
+      toast.success("Perfil actualizado");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error inesperado");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <section className="section-shell py-14">
       <div className="grid gap-8 xl:grid-cols-[0.9fr_1.1fr]">
         <aside className="space-y-6">
           <div className="panel-strong rounded-[32px] p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-400 text-white">
                 <UserRound className="h-6 w-6" />
               </div>
-              <button
-                type="button"
-                className="button-secondary"
-                onClick={() => {
-                  logout();
-                  toast.success("Sesión cerrada");
-                }}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Salir
-              </button>
+              <div className="flex flex-wrap gap-2">
+                {editing ? (
+                  <>
+                    <button
+                      type="button"
+                      className="button-primary"
+                      onClick={handleSaveProfile}
+                      disabled={saving}
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      {saving ? "Guardando..." : "Guardar"}
+                    </button>
+                    <button
+                      type="button"
+                      className="button-secondary"
+                      onClick={() => {
+                        setEditing(false);
+                        setForm({
+                          nombre: profile.nombre,
+                          correo: profile.correo,
+                          telefono: profile.telefono,
+                          tipoDocumento: profile.tipoDocumento,
+                          numeroDocumento: profile.numeroDocumento,
+                          direccion: profile.direccion,
+                          ciudad: profile.ciudad,
+                          referencia: profile.referencia ?? "",
+                        });
+                      }}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Cancelar
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="button-secondary"
+                      onClick={() => setEditing(true)}
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="button-secondary"
+                      onClick={() => {
+                        logout();
+                        toast.success("Sesión cerrada");
+                      }}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Salir
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
-            <h1 className="mt-5 text-3xl font-semibold">{profile.nombre}</h1>
-            <div className="mt-5 space-y-2 text-sm text-[var(--muted)]">
-              <p>{profile.correo}</p>
-              <p>{profile.telefono}</p>
-              <p>
-                {profile.tipoDocumento} {profile.numeroDocumento}
-              </p>
-              <p>
-                {profile.direccion}, {profile.ciudad}
-              </p>
-            </div>
+            <h1 className="mt-5 text-3xl font-semibold">
+              {editing ? "Editar perfil" : profile.nombre}
+            </h1>
+            {editing ? (
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block text-sm text-[var(--muted)]">
+                    Nombre completo
+                  </label>
+                  <input
+                    className="input-shell"
+                    value={form.nombre}
+                    onChange={(event) => setForm({ ...form, nombre: event.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm text-[var(--muted)]">Correo</label>
+                  <input
+                    type="email"
+                    className="input-shell"
+                    value={form.correo}
+                    onChange={(event) => setForm({ ...form, correo: event.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm text-[var(--muted)]">Teléfono</label>
+                  <input
+                    className="input-shell"
+                    value={form.telefono}
+                    onChange={(event) => setForm({ ...form, telefono: event.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm text-[var(--muted)]">
+                    Tipo de documento
+                  </label>
+                  <select
+                    className="input-shell"
+                    value={form.tipoDocumento}
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        tipoDocumento: event.target.value as ClienteFacturacion["tipoDocumento"],
+                      })
+                    }
+                  >
+                    <option value="CC">CC</option>
+                    <option value="NIT">NIT</option>
+                    <option value="CE">CE</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm text-[var(--muted)]">
+                    Número de documento
+                  </label>
+                  <input
+                    className="input-shell"
+                    value={form.numeroDocumento}
+                    onChange={(event) =>
+                      setForm({ ...form, numeroDocumento: event.target.value })
+                    }
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block text-sm text-[var(--muted)]">Dirección</label>
+                  <input
+                    className="input-shell"
+                    value={form.direccion}
+                    onChange={(event) => setForm({ ...form, direccion: event.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm text-[var(--muted)]">Ciudad</label>
+                  <input
+                    className="input-shell"
+                    value={form.ciudad}
+                    onChange={(event) => setForm({ ...form, ciudad: event.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm text-[var(--muted)]">Referencia</label>
+                  <input
+                    className="input-shell"
+                    value={form.referencia ?? ""}
+                    onChange={(event) => setForm({ ...form, referencia: event.target.value })}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="mt-5 space-y-2 text-sm text-[var(--muted)]">
+                <p>{profile.correo}</p>
+                <p>{profile.telefono}</p>
+                <p>
+                  {profile.tipoDocumento} {profile.numeroDocumento}
+                </p>
+                <p>
+                  {profile.direccion}, {profile.ciudad}
+                </p>
+                {profile.referencia ? <p>{profile.referencia}</p> : null}
+              </div>
+            )}
           </div>
 
           <div className="panel-strong rounded-[32px] p-6">
@@ -209,7 +416,7 @@ export function AccountProfileClient() {
                     {order.items.map((item) => (
                       <div
                         key={`${order._id}-${item.productoId}-${item.nombre}`}
-                        className="flex items-center justify-between gap-3 border-t border-white/10 pt-3 text-sm"
+                        className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3 text-sm"
                       >
                         <div>
                           <p className="font-medium">{item.nombre}</p>

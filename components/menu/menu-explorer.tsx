@@ -9,8 +9,14 @@ import { CATEGORIAS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Producto } from "@/types";
 
-export function MenuExplorer({ products }: { products: Producto[] }) {
-  const [category, setCategory] = useState<string>("todas");
+export function MenuExplorer({
+  products,
+  initialCategory = "todas",
+}: {
+  products: Producto[];
+  initialCategory?: string;
+}) {
+  const [category, setCategory] = useState<string>(initialCategory);
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {

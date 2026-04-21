@@ -12,8 +12,35 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const products = await getProductos();
+  const hasProducts = products.length > 0;
   const featured = products.filter((product) => product.destacado).slice(0, 3);
-  const productOfDay = products[new Date().getDate() % products.length];
+  const productOfDay = hasProducts ? products[new Date().getDate() % products.length] : null;
+
+  if (!hasProducts) {
+    return (
+      <section className="section-shell py-16">
+        <div className="panel-strong mx-auto max-w-3xl rounded-[36px] p-8 text-center sm:p-10">
+          <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">
+            Catálogo vacío
+          </p>
+          <h1 className="mt-3 text-4xl font-semibold sm:text-5xl">
+            Aún no hay productos publicados.
+          </h1>
+          <p className="mt-4 text-[var(--muted)]">
+            Crea el primer producto desde el panel admin para activar la tienda y el menú.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link href="/admin/productos" className="button-primary">
+              Ir a productos
+            </Link>
+            <Link href="/menu" className="button-secondary">
+              Ver menú vacío
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <>
@@ -59,8 +86,8 @@ export default async function HomePage() {
           <div className="absolute -right-6 bottom-8 hidden h-32 w-32 rounded-full bg-violet-500/20 blur-3xl lg:block" />
           <div className="relative overflow-hidden rounded-[36px] border border-white/10">
             <Image
-              src={productOfDay.imagenes[0]}
-              alt={productOfDay.nombre}
+              src={productOfDay!.imagenes[0]}
+              alt={productOfDay!.nombre}
               width={900}
               height={1100}
               className="h-full min-h-[520px] w-full object-cover"
@@ -71,14 +98,14 @@ export default async function HomePage() {
               <span className="inline-flex rounded-full bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.24em] text-white">
                 Producto del día
               </span>
-              <h2 className="mt-4 text-3xl font-semibold sm:text-4xl">{productOfDay.nombre}</h2>
-              <p className="mt-3 max-w-md text-sm text-white/75">{productOfDay.descripcion}</p>
+              <h2 className="mt-4 text-3xl font-semibold sm:text-4xl">{productOfDay!.nombre}</h2>
+              <p className="mt-3 max-w-md text-sm text-white/75">{productOfDay!.descripcion}</p>
               <div className="mt-5 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm text-white/60">Desde</p>
-                  <p className="text-2xl font-semibold">{formatCurrency(productOfDay.precio)}</p>
+                  <p className="text-2xl font-semibold">{formatCurrency(productOfDay!.precio)}</p>
                 </div>
-                <Link href={`/productos/${productOfDay.slug}`} className="button-primary">
+                <Link href={`/productos/${productOfDay!.slug}`} className="button-primary">
                   Ver detalle
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>

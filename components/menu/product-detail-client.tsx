@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import { Minus, Plus, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -44,6 +45,7 @@ export function ProductDetailClient({
   const unitTotal =
     product.precio +
     personalizacionesSeleccionadas.reduce((acc, option) => acc + option.precio, 0);
+  const unavailable = !product.disponible || product.stock <= 0;
 
   return (
     <section className="section-shell py-12">
@@ -146,11 +148,17 @@ export function ProductDetailClient({
             <div>
               <p className="text-sm text-[var(--muted)]">Precio final unitario</p>
               <p className="text-3xl font-semibold">{formatCurrency(unitTotal)}</p>
+              <p className="mt-2 text-sm text-[var(--muted)]">
+                {unavailable
+                  ? "Temporalmente no disponible para compra."
+                  : `Stock disponible: ${product.stock} unidad(es).`}
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 className="button-secondary h-11 w-11 rounded-full"
+                disabled={unavailable}
                 onClick={() => setQuantity((value) => Math.max(1, value - 1))}
               >
                 <Minus className="h-4 w-4" />
@@ -159,6 +167,7 @@ export function ProductDetailClient({
               <button
                 type="button"
                 className="button-secondary h-11 w-11 rounded-full"
+                disabled={unavailable}
                 onClick={() => setQuantity((value) => value + 1)}
               >
                 <Plus className="h-4 w-4" />
@@ -168,14 +177,18 @@ export function ProductDetailClient({
 
           <button
             type="button"
-            className="button-primary mt-6 w-full"
+            className={unavailable ? "button-secondary mt-6 w-full opacity-60" : "button-primary mt-6 w-full"}
+            disabled={unavailable}
             onClick={() => {
+              if (unavailable) {
+                return;
+              }
               addItem(product, quantity, personalizacionesSeleccionadas);
               toast.success("Producto agregado al carrito");
             }}
           >
             <Sparkles className="mr-2 h-4 w-4" />
-            Agregar al carrito
+            {unavailable ? "Producto agotado" : "Agregar al carrito"}
           </button>
         </motion.div>
       </div>
@@ -193,11 +206,11 @@ export function ProductDetailClient({
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {related.map((item) => (
               <div key={item._id}>
-                <a href={`/productos/${item.slug}`} className="panel block rounded-[28px] p-5">
+                <Link href={`/productos/${item.slug}`} className="panel block rounded-[28px] p-5">
                   <p className="text-lg font-semibold">{item.nombre}</p>
                   <p className="mt-2 text-sm text-[var(--muted)]">{item.descripcion}</p>
                   <p className="mt-4 font-semibold">{formatCurrency(item.precio)}</p>
-                </a>
+                </Link>
               </div>
             ))}
           </div>

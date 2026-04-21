@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getOrdenPorId, updateOrdenEstado } from "@/lib/data";
+import { deleteOrden, getOrdenPorId, updateOrdenEstado } from "@/lib/data";
 import { orderStatusSchema } from "@/lib/validators";
 
 export async function GET(
@@ -44,6 +44,28 @@ export async function PUT(
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "Error al actualizar la orden" },
       { status: 400 },
+    );
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params;
+
+  try {
+    const deleted = await deleteOrden(id);
+
+    if (!deleted) {
+      return NextResponse.json({ message: "Orden no encontrada" }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true, order: deleted });
+  } catch (error) {
+    return NextResponse.json(
+      { message: error instanceof Error ? error.message : "Error al eliminar la orden" },
+      { status: 500 },
     );
   }
 }

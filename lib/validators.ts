@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+const clienteSchema = z.object({
+  nombre: z.string().min(3),
+  correo: z.email(),
+  telefono: z.string().min(7),
+  tipoDocumento: z.enum(["CC", "NIT", "CE"]),
+  numeroDocumento: z.string().min(5),
+  direccion: z.string().min(8),
+  ciudad: z.string().min(3),
+  referencia: z.string().optional(),
+});
+
 const opcionSeleccionadaSchema = z.object({
   grupoId: z.string().min(1),
   grupoNombre: z.string().min(1),
@@ -39,16 +50,7 @@ export const productSchema = z.object({
 });
 
 export const orderSchema = z.object({
-  cliente: z.object({
-    nombre: z.string().min(3),
-    correo: z.email(),
-    telefono: z.string().min(7),
-    tipoDocumento: z.enum(["CC", "NIT", "CE"]),
-    numeroDocumento: z.string().min(5),
-    direccion: z.string().min(8),
-    ciudad: z.string().min(3),
-    referencia: z.string().optional(),
-  }),
+  cliente: clienteSchema,
   items: z
     .array(
       z.object({
@@ -77,3 +79,5 @@ export const customerLoginSchema = z.object({
   correo: z.email(),
   numeroDocumento: z.string().min(5),
 });
+
+export const customerProfileSchema = clienteSchema;

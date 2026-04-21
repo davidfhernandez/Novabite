@@ -11,7 +11,7 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <button className="button-secondary h-11 w-11 rounded-full" aria-hidden>
+      <button className="button-secondary h-11 w-11 rounded-full text-[var(--foreground)]" aria-hidden>
         <SunMedium className="h-4 w-4" />
       </button>
     );
@@ -21,7 +21,7 @@ export function ThemeToggle() {
 
   return (
     <button
-      className="button-secondary h-11 w-11 rounded-full"
+      className="button-secondary h-11 w-11 rounded-full text-[var(--foreground)]"
       onClick={() => setTheme(dark ? "light" : "dark")}
       type="button"
       aria-label="Cambiar tema"
